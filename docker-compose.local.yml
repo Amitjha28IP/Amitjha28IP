@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: vaultwarden-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vaultwarden
+      POSTGRES_USER: vaultwarden
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - vaultwarden-network
+    # Mac-specific: Use host networking for better performance
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  # Vaultwarden Server
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      # Basic Configuration for Local Development
+      DOMAIN: "https://vault.local"
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://vaultwarden:${DB_PASSWORD}@db:5432/vaultwarden
+      
+      # Admin Configuration
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      
+      # Local Development Settings
+      SIGNUPS_ALLOWED: true  # Allow signups for local testing
+      INVITATIONS_ALLOWED: true
+      SHOW_PASSWORD_HINT: true
+      WEB_VAULT_ENABLED: true
+      
+      # Google OAuth/OIDC Configuration
+      SSO_ENABLED: true
+      SSO_ONLY: false
+      OIDC_ENABLED: true
+      OIDC_ISSUER: "https://accounts.google.com"
+      OIDC_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      OIDC_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      OIDC_SCOPES: "openid email profile"
+      OIDC_REDIRECT_URI: "https://vault.local/identity/connect/oidc-signin"
+      OIDC_AUTO_CREATE_USERS: true
+      OIDC_EMAIL_CLAIM: "email"
+      OIDC_NAME_CLAIM: "name"
+      
+      # MFA/2FA Configuration
+      DISABLE_2FA_REMEMBER: false
+      EMAIL_2FA_AUTO_FALLBACK: true
+      
+      # Bitwarden Send Configuration (Secure File Sharing)
+      SENDS_ALLOWED: true
+      SEND_PURGE_SCHEDULE: "0 5 * * * *"
+      SEND_DEFAULT_DELETE_DAYS: 7
+      SEND_MAX_DELETE_DAYS: 31
+      SEND_MAX_ACCESS_COUNT: 100
+      
+      # File Upload Configuration
+      ATTACHMENT_LIMIT: 104857600      # 100MB per file
+      USER_ATTACHMENT_LIMIT: 1073741824  # 1GB total per user
+      
+      # Security Settings
+      EMERGENCY_ACCESS_ALLOWED: true
+      PASSWORD_ITERATIONS: 600000
+      
+      # Email Configuration (Optional for local development)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_NAME: "Vaultwarden Local"
+      SMTP_TIMEOUT: 15
+      SMTP_DEBUG: false
+      
+      # Logging
+      LOG_LEVEL: info
+      EXTENDED_LOGGING: true
+      
+      # Mac-specific optimizations
+      ROCKET_WORKERS: 4
+      
+    volumes:
+      - vaultwarden_data:/data
+    networks:
+      - vaultwarden-network
+    ports:
+      - "127.0.0.1:8080:80"      # HTTP port
+      - "127.0.0.1:3012:3012"    # WebSocket port
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: vaultwarden-nginx
+    restart: unless-stopped
+    depends_on:
+      - vaultwarden
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx-local.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - vaultwarden-network
+
+networks:
+  vaultwarden-network:
+    driver: bridge
+
+volumes:
+  vaultwarden_data:
+    driver: local
+  db_data:
+    driver: local
