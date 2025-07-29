@@ -56,7 +56,7 @@ services:
       
       # MFA/2FA Configuration
       DISABLE_2FA_REMEMBER: false
-      EMAIL_2FA_AUTO_FALLBACK: true
+      EMAIL_2FA_AUTO_FALLBACK: false
       
       # Bitwarden Send Configuration (Secure File Sharing)
       SENDS_ALLOWED: true
@@ -73,16 +73,16 @@ services:
       EMERGENCY_ACCESS_ALLOWED: true
       PASSWORD_ITERATIONS: 600000
       
-      # Email Configuration (Optional for local development)
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
-      SMTP_USERNAME: ${SMTP_USERNAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM_NAME: "Vaultwarden Local"
-      SMTP_TIMEOUT: 15
-      SMTP_DEBUG: false
+      # Email Configuration (Disabled for local development)
+      # SMTP_HOST: ${SMTP_HOST:-}
+      # SMTP_FROM: ${SMTP_FROM:-}
+      # SMTP_PORT: ${SMTP_PORT:-587}
+      # SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      # SMTP_USERNAME: ${SMTP_USERNAME:-}
+      # SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # SMTP_FROM_NAME: "Vaultwarden Local"
+      # SMTP_TIMEOUT: 15
+      # SMTP_DEBUG: false
       
       # Logging
       LOG_LEVEL: info
